@@ -3,7 +3,7 @@ import java.util.*;
 
 public class WordCooccurrenceCalculator
 {
-    private Document document = null;
+    private List<Document> documentList = null;
 
     /**
      * 2차원 희소 행렬을 구현한 {@link HashMap}
@@ -18,14 +18,14 @@ public class WordCooccurrenceCalculator
 
     public WordCooccurrenceCalculator() {}
 
-    public WordCooccurrenceCalculator(final Document document, final int windowSize)
+    public WordCooccurrenceCalculator(final List<Document> documentList, final int windowSize)
     {
-        setDocument(document, windowSize);
+        setDocumentList(documentList, windowSize);
     }
 
-    public void setDocument(final Document document, final int windowSize)
+    public void setDocumentList(final List<Document> documentList, final int windowSize)
     {
-        this.document = document;
+        this.documentList = documentList;
 
         cooccurrenceMatrix = buildMatrix(windowSize);
         orderedCooccurrenceListMap = buildOrderedKeyListMap();
@@ -50,26 +50,31 @@ public class WordCooccurrenceCalculator
         Queue<Term> queue = new ArrayDeque<>();
         HashMap<MatrixKey, Integer> retVal = new HashMap<>();
 
-        document.getTermList().forEach(term1 ->
+        documentList.forEach(document ->
         {
-            if (!queue.isEmpty())
+            queue.clear();
+
+            document.getTermList().forEach(term1 ->
             {
-                queue.forEach(term2 ->
+                if (!queue.isEmpty())
                 {
-                    if (term1.equals(term2))
-                        return;
+                    queue.forEach(term2 ->
+                    {
+                        if (term1.equals(term2))
+                            return;
 
-                    final MatrixKey MATRIX_KEY = new MatrixKey(term1, term2);
+                        final MatrixKey MATRIX_KEY = new MatrixKey(term1, term2);
 
-                    retVal.computeIfPresent(MATRIX_KEY, (key, value) -> ++value);
-                    retVal.putIfAbsent(MATRIX_KEY, 1);
-                });
-            }
+                        retVal.computeIfPresent(MATRIX_KEY, (key, value) -> ++value);
+                        retVal.putIfAbsent(MATRIX_KEY, 1);
+                    });
+                }
 
-            queue.add(term1);
+                queue.add(term1);
 
-            if (queue.size() >= (windowSize + 1))
-                queue.poll();
+                if (queue.size() >= (windowSize + 1))
+                    queue.poll();
+            });
         });
 
         return retVal;

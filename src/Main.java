@@ -8,7 +8,6 @@ public class Main
 {
     private static void initResources(
             List<Document> docList, TFIDFCalculator tfIdfCalculator,
-            Map<String, WordCooccurrenceCalculator> wcMap, final int wcWinSize,
             Map<String, List<Pair<Document, Double>>> csMap, final int csNumFeaturesForCalculating)
     {
         tfIdfCalculator.buildCacheData();
@@ -16,7 +15,6 @@ public class Main
         for (Document document : docList)
         {
             String docID = document.getID();
-            wcMap.put(docID, new WordCooccurrenceCalculator(document, wcWinSize));
             csMap.put(docID, CosineSimilarityCalculator.calculate(document, docList, csNumFeaturesForCalculating));
         }
     }
@@ -54,16 +52,6 @@ public class Main
         }
     }
 
-    private static void printWordCooccurrence(
-            String content, List<Document> documentList, Map<String, WordCooccurrenceCalculator> wcMap)
-    {
-        for (Document document : documentList)
-        {
-            final String docID = document.getID();
-            System.out.println(docID + ": " + wcMap.get(docID).getOrderedCooccurrenceList(content));
-        }
-    }
-
     private static void printCosineSimilarities(
             String docID, Map<String, List<Pair<Document, Double>>> csMap)
     {
@@ -86,14 +74,12 @@ public class Main
     {
         List<Document> documentList = Document.batchRead("data/");
         TFIDFCalculator tfIdfCalculator = new TFIDFCalculator(documentList);
-
-        // WordCooccurrenceCalculator list map (docID, WordCooccurrenceCalculator)
-        Map<String, WordCooccurrenceCalculator> wcMap = new HashMap<>();
+        WordCooccurrenceCalculator wcCalculator = new WordCooccurrenceCalculator(documentList, 2);
 
         // 코사인 유사도 list map (docID, 코사인 유사도 리스트)
         Map<String, List<Pair<Document, Double>>> csMap = new HashMap<>();
 
-        initResources(documentList, tfIdfCalculator, wcMap, 2, csMap, 5);
+        initResources(documentList, tfIdfCalculator, csMap, 5);
 
         Scanner scanner = new Scanner(System.in);
 
@@ -126,7 +112,7 @@ public class Main
                 case 2:
                 {
                     String content = input[1];
-                    printWordCooccurrence(content, documentList, wcMap);
+                    wcCalculator.getOrderedCooccurrenceList(content).forEach(System.out::println);
                 }
                     break;
 
@@ -144,10 +130,10 @@ public class Main
                     documentList.addAll(newDocList);
 
                     tfIdfCalculator.setDocumentList(documentList);
-                    wcMap.clear();
+                    wcCalculator.setDocumentList(documentList, 2);
                     csMap.clear();
 
-                    initResources(documentList, tfIdfCalculator, wcMap, 2, csMap, 5);
+                    initResources(documentList, tfIdfCalculator, csMap, 5);
                     System.out.println(
                             "디렉토리 [" + directory + "]에 존재하는 " +
                                     newDocList.size() + "개의 문서를 추가로 로드하였습니다.");
